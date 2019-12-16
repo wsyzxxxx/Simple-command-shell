@@ -1,0 +1,900 @@
+Hi, welcome to my command shell!!!
+I will give you specific instructions to test my command shell.
+By now, I have fully finished all the stpes including coding and testing.
+And I really tried my best to make the testcases comprehensive and sufficient.
+
+However, before you start the testing, please notice the following points which are not specific in the
+commandShell.txt file, but I want to make them clear for appropriate using and testing.
+	1. Valgrind:
+		 All the steps in my shell should be valgrind cleaned, so I omit the valgrind outputs.
+		 But when using the command shell to execute other programs, those programs may have memory leaks.
+		 For example, I try to use valgrind to test 'ls' command without my shell, and it shows 'ls' has memory leaks.
+		 So I cannot ensure the valgrind clean of all child processes, but can only ensure the valgrind clean of my shell.
+
+	2. Definitions of special labels: 
+	   I try to make my shell use labels mostly the same as the shell on our VM.
+		 The usage of labels is different between inside the double quotation "" and outside the double quotation "".
+				a. `\` : (1)The one character right after the backslashes are escaped as the literal character when outside quotation "".
+								 (2)When inside quotation, most characters and backslashes are treated as two separate characters 
+										except some special rules specified below:
+								 
+				b. `\$`: Treated as the literal "$" both inside and outside the double quotation "".
+					 `\\`: Treated as the literal "\" both inside and outside the double quotation "".
+					 `\"`: Treated as the literal """ both inside and outside the double quotation "".
+
+				c. `\ `: (1)Treated as literal " " outside the double quotation "".
+						     (2)Treated as literal "\ " inside the double quotation "".
+				
+				d. `set var value`: (1)Var name should only contain letters, numbers and underscores.
+														(2)Value should start from the first non-whitespace character after var name.
+														And all the characters in the rest of line would be directly set into value without escaping.
+														(3)However, the characters in the value should be expaned first if it contains `$var`.
+
+				e. `$var`: (1)$var expansion could happen both inside and outside the double quotation "".
+									 (2)The var name for $var expansion should be the longest possible string after "$" label.
+									 (3)The strings after $var expansion should be parsed and escaped by the rules in step 2.
+									 (4)When the $var doesn't exist, the expansion shoud become empty string "".
+	
+	3. Environment variables:
+		 I import all the environment variables from the system shell for all the child programs, so if you run `env`, you will
+		 see a great number of variables and values. But the search path for executable program should just be "ECE551PATH", and
+		 I also use "HOME" for the home directory. Other variables are not used in the shell.
+	
+	4. Pipes implementation:
+		 I make pipe function of my shell mostly similar to the shell on the VM. In the special situation, if you run some complex
+		 commands like `./promA < inA > outA | ./promB < inB`, then the pipe will not work for "promA" and "promB",
+		 because the specific redirect has higher priority then pipe.
+	
+	5. Other details:
+		 Some trivial details in the project requirement may be not identical to the real shell. I really obeyed the rules
+		 in the requirement document first.
+		 And some small details may not be included in the above points, but I would make them clear in the below testcases.
+
+
+Last but not least, thank you for coming to my "ffosh"! Hope you enjoy it!
+-By Will
+Dec. 12th, 2019
+
+=====================================================================================================================
+TESTING:
+
+All the commands are included in the `` labels.
+For clearness, I omit some redundant outputs like the prompts.
+
+0.The testing commands and operations are all in the "ffosh" program, so you need to build and start the program first!
+
+	run `make` command, you will see:
+	
+	g++ -Wall -Werror -pedantic -std=gnu++98 -ggdb3 -o ffosh  Interpreter.cpp ffosh.cpp Executor.cpp
+	g++ -Wall -Werror -pedantic -std=gnu++98 -ggdb3 testcases/printAllInputs.cpp -o printAllInputs
+	g++ -Wall -Werror -pedantic -std=gnu++98 -ggdb3 testcases/printAllArguments.cpp -o printAllArguments
+	g++ -Wall -Werror -pedantic -std=gnu++98 -ggdb3 testcases/segmentfault.cpp -o testcases/segmentfault
+	g++ -Wall -Werror -pedantic -std=gnu++98 -ggdb3 testcases/normalSuccess.cpp -o testcases/normalSuccess
+	g++ -Wall -Werror -pedantic -std=gnu++98 -ggdb3 testcases/normalFailure.cpp -o testcases/normalFailure
+
+	This is correct because it executes as my Makefile. I build the ffosh program along with some testing programs.
+
+	Then you can run `./ffosh1`. command, you will see:
+
+	ffosh:/home/wx59/ece551/mp_miniproject$
+
+	This is correct because it is the initial information of my shell, and if you run it in a different path, the path
+	before '$' may be different. It is the actual absolute path where you are now.
+
+1.A simple successful program in the current path.
+
+	(a) run `./testcases/normalSuccess`
+	(b) run `testcases/normalSuccess`
+
+	Then you will see the same output:
+
+	For (a) and (b):
+	Program was successful
+	ffosh:/home/wx59/ece551/mp_miniproject$ 
+
+	This is correct because the 'testcases/normalSuccess' program does nothing but 'return EXIT_SUCCESS', so the program
+	is executed successfully. You can refer to the 'testcases/normalSuccess.cpp' for the source code. And the prompt
+	should show up again after the program exit.
+
+2.A simple failure program in the current path.
+	
+	(a) run `./testcases/normalFailure`
+	(b) run `testcases/normalFailure`
+
+	Then you will see the same output:
+
+	For (a) and (b):
+	Program failed with code 1
+	ffosh:/home/wx59/ece551/mp_miniproject$ 
+
+	This is correct because the 'testcases/normalSuccess' program does nothing but 'return EXIT_FAILURE', so the program
+	is failed with code 1. You can refer to the 'testcases/normalFailure.cpp' for the source code. And the prompt
+	should show up again after the program exit.
+
+3.A simple terminated program in the current path.
+
+	(a) run `./testcases/segmentfault`
+	(b) run `testcases/segmentfault`
+
+	Then you will see the same output:
+
+	For (a) and (b):
+	Terminated by signal 11
+	ffosh:/home/wx59/ece551/mp_miniproject$ 
+
+	This is correct because the 'testcases/segmentfault' program tries to access an invalid position, so the program
+	would be terminated with the signal 11. You can refer to the 'testcases/segmentfault.cpp' for the source code. 
+	And the prompt should show up again after the program exit.
+
+4.A system program in the absolute path.
+
+	run `/bin/ls`
+
+	Then you will see the output:
+
+	Command.h	  configuration.h  Executor.cpp  ffosh	    Interpreter.cpp  Makefile	   printAllArguments  README	 TESTING.txt
+	commandShell.txt  exceptions.h	   Executor.h	 ffosh.cpp  Interpreter.h    numerics.txt  printAllInputs     testcases  wx59_delivery.zip
+	Program was successful
+	ffosh:/home/wx59/ece551/mp_miniproject$ 
+
+	This is correct because the '/bin/ls' program really exists and its function is to list the files in the current directory
+	when there is no other argument, and the files names may vary when you test. In such case, the program executes successfully,
+	so it should output the success information and the prompt should show up again after the program exit.
+
+5.A nonexistent program in the current path and in the absolute path.
+
+	(a) run `/nonexistentfile`
+	(b) run `./nonexistentfile`
+	(c) run `none/nonefile`
+
+	Then you will get the similar output:
+
+	For (a):
+	Command /nonexistentfile not found
+	ffosh:/home/wx59/ece551/mp_miniproject$
+
+	For (b):
+	Command ./nonexistentfile not found
+	ffosh:/home/wx59/ece551/mp_miniproject$
+
+	For (c):
+	Command none/nonefile not found
+	ffosh:/home/wx59/ece551/mp_miniproject$
+
+	This is correct because the '/nonexistentfile', '/nonexistentfile' and 'none/nonefile' all do not exist. Since my
+	shell check if the file existent before executing it, so it will output that the command not found, and not continue
+	to execute the nonexistent program. Also the same prompt should show up again after the error message.
+
+6.A file or document which does not have execution permission.
+
+	(a) run `/bin`
+	(b) run `./README`
+	(c) run `testcases/segmentfault.cpp`
+
+	Then you will get the similar output:
+
+	For (a):
+	ERROR: execve() error: Permission denied
+	Program failed with code 1
+	ffosh:/home/wx59/ece551/mp_miniproject$
+
+	For (b):
+	ERROR: execve() error: Permission denied
+	Program failed with code 1
+	ffosh:/home/wx59/ece551/mp_miniproject$ 
+
+	For (c):
+	ERROR: execve() error: Permission denied
+	Program failed with code 1
+	ffosh:/home/wx59/ece551/mp_miniproject$
+
+	This is correct because these files are all not executable files, so they don't have the execution permission. This would
+	cause an error in the execve() call, so I use perror message as the output, and the failed status in such situation is also 1.
+	Also the same prompt should show up again after the error message.
+
+7.A system program without enough arguments.
+
+	(a) run `/usr/bin/gcc`
+	(b) run `/usr/bin/whereis`
+
+	Then you will get the similar output:
+
+	For (a):
+	gcc: fatal error: no input files
+	compilation terminated.
+	Program failed with code 1
+	ffosh:/home/wx59/ece551/mp_miniproject$
+
+	For (b):
+	whereis: not enough arguments
+	Try 'whereis --help' for more information.
+	Program failed with code 1
+	ffosh:/home/wx59/ece551/mp_miniproject$
+
+	This is correct because these files requires additional arguments to execute. Without enough arguments  would cause them into 
+	error and failed with an exit code i.e. 1. My shell should let them print their own error output and show their fail code.
+	Also the same prompt should show up again after the error message.
+
+8.Empty command.
+
+	(a) run `` (just press the enter)
+	(b) run `    `
+	(c) run `                   ` (as many whitespaces as you want)
+
+	Then you will get the same output:
+	
+	For (a):
+	ffosh:/home/wx59/ece551/mp_miniproject$ 
+	For (b):
+	ffosh:/home/wx59/ece551/mp_miniproject$ 
+	For (c):
+	ffosh:/home/wx59/ece551/mp_miniproject$
+
+	This is correct because when meeting with the empty command, my shell need to do nothing but wait for next commands from user.
+	So it just print the same prompt and wait for user input again.
+
+9.Commands with leading whitespaces and following whitespaces.
+
+	(a) run `           /bin/ls    `
+	(b) run `       testcases/normalSuccess `
+
+	Then you will get the same output as the previous cases:
+
+	For (a):
+	Executor.cpp  Interpreter.cpp  Makefile  TESTING.txt	   configuration.h  ffosh      numerics.txt	  testcases
+	Executor.h    Interpreter.h    README	 commandShell.txt  exceptions.h     ffosh.cpp  printAllArguments
+	Program was successful
+	ffosh:/home/wx59/ece551/mp_miniproject$ 
+	
+	For (b):
+	Program was successful
+	ffosh:/home/wx59/ece551/mp_miniproject$
+
+	This is correct because leading and following whitespaces should be ignored and would not affect the real commands, my shell 
+	need to deal with such the situation and its output is the same as that there is no leading and following whitespaces.
+
+10.Exit the current command shell.
+
+	(a) run `exit`
+	(b) input EOF (Control-D)
+	(c) run `exit1234`
+	(d) input "1234" with EOF(Control-D) and run it
+
+	For (a) and (b):
+	Then my shell would output nothing and exit with valgrind clean.
+
+	For (c) and (d):
+	You will see the output below:
+	Command exit1234 not found
+	ffosh:/home/wx59/ece551/mp_miniproject$
+	Command 1234 not found
+	ffosh:/home/wx59/ece551/mp_miniproject$
+
+	This is correct because the only exit operation is the distinct 'exit' command or sigle EOF(Control-D). Then my shell would
+	successfully exit without additional outputs. However, if the commands are mixed with other characters, it would not be the
+	correct exit command, then my shell would treat them as normal programs and check if they exist in the paths. And also, it 
+	will output a new line of the same prompt if not exited.
+
+
+By now, these above are all the test cases for the step 1. I wrote them in the first submission, so I left them unmodified.
+The following cases may also include some functions in the step1.
+I omit the prompts in output because they are the same.
+Let's continue!
+
+11.A system program without full paths.
+
+	(a) run `ls`
+	(b) run `make`
+	(c) run `env`
+
+	Then my shell would output the correct output for these programs:
+
+	For (a):
+	Command.h	  configuration.h  Executor.cpp  ffosh	    Interpreter.cpp  Makefile	   printAllArguments  README	 TESTING.txt
+	commandShell.txt  exceptions.h	   Executor.h	 ffosh.cpp  Interpreter.h    numerics.txt  printAllInputs     testcases  wx59_delivery.zip
+	Program was successful
+
+	For (b):
+	g++ -Wall -Werror -pedantic -std=gnu++98 -ggdb3 testcases/segmentfault.cpp -o testcases/segmentfault
+	g++ -Wall -Werror -pedantic -std=gnu++98 -ggdb3 testcases/normalSuccess.cpp -o testcases/normalSuccess
+	g++ -Wall -Werror -pedantic -std=gnu++98 -ggdb3 testcases/normalFailure.cpp -o testcases/normalFailure
+	Program was successful
+
+	For (c), a lot of environment variables including:
+	ECE551PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
+
+	This is correct because my shell could search the ECE551PATH for the commands, so these programs are all included
+	in the ECE551PATH, so they can execute successfully.
+
+12.Change ECE551PATH.
+
+	(a) run `set ECE551PATH /`
+	(b) run `export ECE551PATH`
+	(c) run `env`
+	(d) run `/usr/bin/env`
+	(e) run `testcases/normalSuccess`
+
+	Then my shell would print the following outputs:
+
+	For (a):
+	nothing (because it executes successfully)
+
+	For (b):
+	nothing (because it executes successfully)
+
+	For (c):
+	Command env not found
+
+	For (d), a lot of environment variables including:
+	ECE551PATH=/
+	Program was successful
+
+	For (e):
+	Program was successful
+
+	These are all correct because 'set' and 'export' ECE551PATH would change the directories for my 
+	shell to search the programs. Then it cannot find 'env', so it print 'not found'. But the programs
+	can still be executed with the absolute or relative paths. And we can notice that the 'ECE551PATH'
+	in the environment variables has been changed into '\'.
+
+13.Run programs with arguments.
+
+	(a) run `ls -a -l /`
+	(b) run `whereis ls`
+	(c) run `./printAllArguments a b c d`
+	(d) run `ls ...`
+	(e) run `whereis none`
+
+	Then my shell would print the following outputs:
+
+	For (a):
+	total 56
+	drwxr-xr-x  22 root root  311 Dec  4 06:27 .
+	drwxr-xr-x  22 root root  311 Dec  4 06:27 ..
+	drwxr-xr-x   2 root root    6 Jul 24  2018 srv
+	dr-xr-xr-x  13 root root    0 Sep 22 21:54 sys
+	......(be ignored)
+	Program was successful
+
+	For (b):
+	ls: /bin/ls /usr/share/man/man1/ls.1.gz
+	Program was successful
+
+	For (c):
+	arguments count: 5
+	@./printAllArguments@
+	@a@
+	@b@
+	@c@
+	@d@
+	Program was successful
+
+	For (d):
+	ls: cannot access '...': No such file or directory
+	Program failed with code 2
+
+	For (e):
+	none:
+	Program was successful
+
+	These are all correct because all the programs can accept all the arguments and make use
+	of them. When arguments are not correct, they can also print the error information.
+	P.S. I wrote printAllArguments.cpp to print all the arguments from 'argv'.
+
+14.Run programs with more various arguments.
+
+	(a) run `./printAllArguments    a                b          2`
+
+	For (a), output should be:
+	arguments count: 4
+	@./printAllArguments@
+	@a@
+	@b@
+	@2@
+	Program was successful
+
+	This is correct because the arguments are separated by whitespace.
+
+	(b) run `./printAllArguments "a  b cc      " `
+
+	For (b), output should be:
+	arguments count: 2
+	@./printAllArguments@
+	@a  b cc      @
+	Program was successful
+
+	This is correct because the the whitespace inside the quotations "" 
+	are included in the arguments.
+
+	(c) run `./printAllArguments "a   b"   c    "def   ghi"`
+
+	For (c), output should be:
+	arguments count: 4
+	@./printAllArguments@
+	@a   b@
+	@c@
+	@def   ghi@
+	Program was successful
+
+	This is correct because whitespace outside quotations "" are to divide arguments
+	and inside quotations are part of arguments
+
+	(d) run `./printAllArguments \a \  \\ \$ \" \' \\\\`
+
+	For (d), output should be:
+	arguments count: 8
+	@./printAllArguments@
+	@a@
+	@ @
+	@\@
+	@$@
+	@"@
+	@'@
+	@\\@
+	Program was successful
+
+	This is correct because '\' can escape all kinds of characters outside quotations,
+	including '"' and '\'.
+
+	(e) run `./printAllArguments "afdsaf `
+
+	For (e), output should be:
+	ERROR: wrong command parameters
+
+	This is correct because an unclosed quotation mark is not a correct command line.
+
+	(f) run `./printAllArguments                     `
+
+	For (f), output should be:
+	arguments count: 1
+	@./printAllArguments@
+	Program was successful
+
+	This is correct because a program can take no arguments
+
+	(e) run `./printAllArguments """"""""""""dafdsaf`
+
+	For (e), output should be:
+	arguments count: 2
+	@./printAllArguments@
+	@dafdsaf@
+	Program was successful
+
+	This is correct because a pair of empty quotation marks are treated as nothing.
+
+	(g) run `./printAllArguments "\ \ \ \\ \$ \""`
+
+	For (g), output should be:
+	arguments count: 2
+	@./printAllArguments@
+	@\ \ \ \ $ "@
+	Program was successful
+
+	This is correct because only '\', '$' and '"' can be escaped in the quotations.
+
+	(h) run `./printAllArguments "\"hello world\"" "a\\b\\c d\\"`
+
+	For (h), output should be:
+	arguments count: 3
+	@./printAllArguments@
+	@"hello world"@
+	@a\b\c d\@
+	Program was successful
+
+	This is correct because it matches the requirement document.
+
+15.Change the directory.
+
+	(a) run `cd`
+
+	For (a), output should be:
+	ffosh:/home/wx59$
+
+	This is correct because it can search the 'HOME' directory for current user and change into it.
+
+	(b) run `cd abc`
+
+	For (b), output should be:
+	ERROR: chdir() error: No such file or directory
+	ffosh:/home/wx59$
+
+	This is correct because it cannot change into a nonexistent directory.
+
+	(c) run `cd .`
+
+	For (c), output should be:
+	ffosh:/home/wx59$
+
+	This is correct because it can change into current directory '.'.
+
+	(d) run `cd ece551`
+
+	For (d), output should be:
+	ffosh:/home/wx59/ece551$
+
+	This is correct because it can change into a relative directory.
+
+	(e) run `cd ..`
+
+	For (e), output should be:
+	ffosh:/home/wx59$
+
+	This is correct because it can change into a upper level directory.
+
+	(f) run `cd /`
+
+	For (f), output should be:
+	ffosh:/$
+
+	This is correct because it can change into a absolute directory.
+
+	(g) run `mkdir a\ b`, `cd a\ ""b""`, `cd ..` and `rm -r a\ b`
+
+	For (g), output should be:
+	ffosh:/home/wx59$ mkdir a\ b
+	Program was successful
+	ffosh:/home/wx59$ cd a\ ""b""
+	ffosh:/home/wx59/a b$ cd ..
+	ffosh:/home/wx59$ rm -r a\ b
+	Program was successful
+	ffosh:/home/wx59$
+
+	This is correct because the escaption rule can also be applied to
+	the cd command.
+
+16.Setting and using the shell variables and environment variables.
+Please notice that the variable expansion happens ahead of parsing the escaption of the line!
+(except excaping '$' in some situations)
+
+	(a) run `set vara I'mvara.`
+	(b) run `set varb I'mvarb       tailofb.`
+	(c) run `set program ./printAllArguments`
+	(d) run `set var3 1    2     3`
+	(e) run `set quotations "123\"456"  "232332"`
+	
+	The above lines have no output, because they can all execute successfully.
+	These are true because these commands are all valid for `set` commands.
+
+
+	(f) run `set space           `
+	!!!!!This line would have the error output: ERROR: set: wrong parameter numbers.
+	This is correct because value should start with a nonwhitespace characters
+
+			run `set set b$3a@  b3a+`
+	!!!!!This line would have the error output: ERROR: set: wrong parameter numbers.
+	This is correct because var name should only cotain letters, numbers and '_'.
+
+	(g) run `set 3a aaa`
+			run `set b$3a  b3a`
+			run `set b3a  bbbbb$3a###`
+			run `set b3aq "bbbb$3a###"`
+			run `set b3an "bbbb\$3a###"`
+			run `set bras bbbb\$3a###`
+			run `set p $program`
+
+	The above lines have no output, because they can all execute successfully.
+	These are true because these commands are all valid for `set` commands.
+	Var expansion can happen in both var name and value parts.
+
+	(h) run `$p $vara`
+
+	For (h), the output should be:
+	arguments count: 2
+	@./printAllArguments@
+	@I'mvara@
+	Program was successful
+
+	This is correct because var expansion can happen both for program name and arguments.
+
+	(i) run `$p $varb`
+
+	For (i), the output should be:
+	arguments count: 3
+	@./printAllArguments@
+	@I'mvarb@
+	@tailofvarb@
+	Program was successful
+
+	This is correct because after var expansion, the arguments should be parsed according to rules.
+
+	(j) run `$p $var3`
+
+	For (j), the output should be:
+	arguments count: 4
+	@./printAllArguments@
+	@1@
+	@2@
+	@3@
+	Program was successful
+
+	This is correct because after var expansion, the arguments should be parsed according to rules.
+
+	(k) run `$p $baaa`
+
+	For (k), the output should be:
+	arguments count: 2
+	@./printAllArguments@
+	@b3a@
+	Program was successful
+
+	This is correct because in the 'set' command, var name has been expanded into 'baaa'.
+
+	(l) run `$p $b3a`
+
+	For (l), the output should be:
+	arguments count: 2
+	@./printAllArguments@
+	@bbbbbaaa###@
+	Program was successful
+
+	This is correct because in the 'set' command, var value has been expanded into the above arguments.
+
+	(m) run `$p $b3aq`
+
+	For (m), the output should be:
+	arguments count: 2
+	@./printAllArguments@
+	@bbbbaaa###@
+	Program was successful
+
+	This is correct because in the 'set' command, var value has been expanded into the above arguments,
+	although it is inside the quotation marks.
+
+	(n) run `$p $b3an`
+
+	For (n), the output should be:
+	arguments count: 2
+	@./printAllArguments@
+	@bbbb$3a###@
+	Program was successful
+
+	This is correct because in the 'set' command, '$' has been escaped into literal character, so no
+	expansion happens in such case.
+
+	(o) run `$p $bras`
+
+	For (o), the output should be:
+	arguments count: 2
+	@./printAllArguments@
+	@bbbb$3a###@
+	Program was successful
+	
+	This is correct because in the 'set' command, '$' has been escaped into literal character, so no
+	expansion happens in such case.
+
+	(p) run `$p 123$vara$varb$novar`
+
+	For (p), the output should be:
+	arguments count: 3
+	@./printAllArguments@
+	@123I'mvaraI'mvarb@
+	@tailofvarb@
+	Program was successful
+
+	This is correct because shell vars can be appended together and nonexistent vars would be expanded
+	into empty string "".
+
+	(q) run `$p $quotations`
+
+	For (q), the output should be:
+	arguments count: 3
+	@./printAllArguments@
+	@123"456@
+	@232332@
+	Program was successful
+
+	This is correct because it follows the shell variable rules.(`set quotations "123\"456"  "232332"`)
+
+
+	(r) run `rev quotations`
+			run `$p $quotations`
+	
+	For (r), the output should be:
+	ERROR: wrong command parameters
+
+	This is correct because the reversed $quotations contain a non-escaped quotation mark '"', which
+	is invalid in the command arguments.
+
+	(s)	run `rev b3a`
+			run `$p $b3a`
+	
+	For (s), the output should be:
+	arguments count: 2
+	@./printAllArguments@
+	@###aaabbbbb@
+	Program was successful
+
+	This is correct because the $b3a has been successfully reversed.
+
+	(t)	run `rev none`
+
+	For (t), the output should be:
+	ERROR: rev: var non does not exist
+
+	This is correct because it cannot reverse a nonexistent $var.
+
+	(u) run `export b3a`
+			run `env`
+	
+	For (u), the output should be a lot of environment variables include:
+	b3a=###aaabbbbb
+
+	This is correct, because it can export the environment variables for the child programs.
+
+	(v) run `export none`
+
+	For (v), the output should be:
+	ERROR: export: var none does not exist
+
+	This is correct, because it cannot export a nonexistent variable.
+
+	(w) run `set ECE551PATH /`
+			run `ls`
+			run `set ECE551PATH /:/bin`
+	
+	For (w), the output should be:
+	ffosh:/home/wx59/ece551/mp_miniproject$ set ECE551PATH /
+	ffosh:/home/wx59/ece551/mp_miniproject$ ls
+	Command ls not found
+	ffosh:/home/wx59/ece551/mp_miniproject$ set ECE551PATH /:/bin
+	ffosh:/home/wx59/ece551/mp_miniproject$ ls
+	Command.h	  configuration.h  Executor.cpp  ffosh	    Interpreter.cpp  Makefile	   printAllArguments  README	 TESTING.txt
+	commandShell.txt  exceptions.h	   Executor.h	 ffosh.cpp  Interpreter.h    numerics.txt  printAllInputs     testcases  wx59_delivery.zip
+	Program was successful
+
+	This is correct because change ECE551PATH would change the search paths for all the programs.
+
+17.Pipes and Redirections
+I implement the basic required functions of pipe and redirection, so the testcases may not be so comprehensive that some corner
+cases may not be resolved by my shell.
+
+I prepared a 'printAllInputs' program with one extra line to stdout and one extra line to stderr.
+	(a) run `./printAllInputs < testcases/testInput.txt`
+
+	For (a), the output should be:
+	inputs from stdin: 
+	aaa
+	bbb
+	ccc
+	ddd
+	eee
+	end of inputs! 
+	This additional line should be printed to stdout!
+	This additional line should be printed to stderr!
+	Program was successful
+
+	This is correct because it get the input from testInput.txt file and print all the inputs.
+	The source file can be found in 'testcases'
+
+	(b) run `./printAllInputs < testcases/testInput.txt > out.txt`
+			run `cat out.txt`
+	
+	For (b), the output should be:
+	ffosh:/home/wx59/ece551/mp_miniproject$ ./printAllInputs < testcases/testInput.txt > out.txt
+	This additional line should be printed to stderr!
+	Program was successful
+	ffosh:/home/wx59/ece551/mp_miniproject$ cat out.txt
+	inputs from stdin:
+	aaa
+	bbb
+	ccc
+	ddd
+	eee
+	end of inputs!
+	This additional line should be printed to stdout!
+	Program was successful
+
+	This is correct because only stdout be printed into out.txt file, but stderr still be printed
+	onto the screen.
+
+	(c) run `./printAllInputs < testcases/testInput.txt > out.txt 2> err.txt`
+			run `cat err.txt`
+
+	For (c), the output should be:
+	ffosh:/home/wx59/ece551/mp_miniproject$ ./printAllInputs < testcases/testInput.txt > out.txt 2> err.txt
+	Program was successful
+	ffosh:/home/wx59/ece551/mp_miniproject$ cat err.txt
+	This additional line should be printed to stderr!
+	Program was successful
+
+	This is correct because the stderr also be printed into err.txt file.
+
+	(d) run `./printAllInputs < testcases/testInput.txt > out1.txt > out2.txt`
+			run `cat out1.txt`
+			run `cat out2.txt`
+
+	For (d), the output should be:
+	This additional line should be printed to stderr!
+	Program was successful
+	ffosh:/home/wx59/ece551/mp_miniproject$ cat out1.txt
+	cat: out1.txt: No such file or directory
+	Program failed with code 1
+	ffosh:/home/wx59/ece551/mp_miniproject$ cat out2.txt
+	inputs from stdin:
+	aaa
+	bbb
+	ccc
+	ddd
+	eee
+	end of inputs!
+	This additional line should be printed to stdout!
+	Program was successful
+
+	This is correct because only the rightmost redirection would work for the same redirection method.
+
+	(e) run `./printAllArguments a b c | ./printAllInputs`
+	
+	For (e), the output should be:
+	inputs from stdin:
+	arguments count: 4
+	@./printAllArguments@
+	@a@
+	@b@
+	@c@
+	end of inputs!
+	This additional line should be printed to stdout!
+	This additional line should be printed to stderr!
+	Program was successful
+
+	This is correct because the output from 'printAllArguments' has been put into the input of 'printAllInputs'
+
+	(f) run `./printAllArguments a b c | ./printAllInputs | ./printAllInputs | ./printAllInputs`
+
+	For (f), the output should be:
+	This additional line should be printed to stderr!
+	This additional line should be printed to stderr!
+	inputs from stdin:
+	inputs from stdin:
+	inputs from stdin:
+	arguments count: 4
+	@./printAllArguments@
+	@a@
+	@b@
+	@c@
+	end of inputs!
+	This additional line should be printed to stdout!
+	end of inputs!
+	This additional line should be printed to stdout!
+	end of inputs!
+	This additional line should be printed to stdout!
+	This additional line should be printed to stderr!
+	Program was successful
+
+	This is correct because the inputs and outputs follow the pipes, and I got the exactly the same
+	output from the system shell. Besides, since the programs are executed in parallels, the order
+	for stderr may vary.
+	
+	(g) run `./printAllInputs < testcases/testInput.txt | ./printAllInputs > out3.txt`
+			run `cat out3.txt`
+	
+	For (g), the output should be:
+	This additional line should be printed to stderr!
+	This additional line should be printed to stderr!
+	Program was successful
+	ffosh:/home/wx59/ece551/mp_miniproject$ cat out3.txt
+	inputs from stdin:
+	inputs from stdin:
+	aaa
+	bbb
+	ccc
+	ddd
+	eee
+	end of inputs!
+	This additional line should be printed to stdout!
+	end of inputs!
+	This additional line should be printed to stdout!
+	Program was successful
+
+	This is correct because the redirection combines successfully with the pipes,
+	and the output matches the real shell on the VM.
+
+
+=====================================================================================================================
+
+Finished! Yeah!!
+
+Hope you enjoy my shell, and you can try more testcases by yourself!
+
+
+
+Thank you for your testing!
