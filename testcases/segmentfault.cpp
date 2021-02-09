@@ -3,8 +3,8 @@
 
 int main(void) {
 	int array[10];
-	int b = array[100000000000000];
-	std::cout << b << std::endl;
-
+  for (int i = 0; i < 12; i++) {
+	  std::cout << array[i] << std::endl;
+  }
 	return EXIT_SUCCESS;
 }

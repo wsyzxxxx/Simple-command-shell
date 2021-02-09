@@ -181,7 +181,7 @@ void Interpreter::parseArguments(std::string str) {
 			}
 			redirectStatus = 1;
 			//ignore the consecutive whitespace
-			while (i < str.size() && str[++i] == ' ');;
+			while (i < str.size() && str[++i] == ' ');
 		//meet a '2>' and outside the quotation, then it is a redirect stderr file
 		} else if (str[i] == '2' && i+1 < str.size() && str[i+1] == '>' && insideQuotation == false) {
 			if (redirectStatus != 0) {

@@ -230,7 +230,7 @@ pid_t Executor::execOneProgram(std::vector<std::string> arguments, std::string r
 															std::string redirOutput, std::string redirError, int inputFd,
 															int outputFd) {
 	//pid of the child process
-	pid_t pid;
+	pid_t pid = 0;
 
 	//check the argument number
 	if (arguments.size() == 0) {
